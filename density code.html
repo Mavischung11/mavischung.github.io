@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>浮沉模擬器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#5D5CDE',
+                    }
+                }
+            },
+            darkMode: 'class'
+        }
+    </script>
+    <style>
+        .dark {
+            color-scheme: dark;
+        }
+        .dark body {
+            background-color: #181818;
+            color: #fff;
+        }
+        canvas {
+            border: 1px solid #ccc;
+        }
+        .dark canvas {
+            border-color: #444;
+        }
+    </style>
+</head>
+<body class="font-sans antialiased">
+    <!-- 設置深色模式 -->
+    <script>
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+            if (event.matches) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        });
+    </script>
+    
+    <div class="min-h-screen flex flex-col items-center justify-center p-4">
+        <div class="w-full max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+            <h1 class="text-2xl font-bold text-center text-gray-800 dark:text-white mb-6">浮沉模擬器</h1>
+            
+            <div class="space-y-4">
+                <!-- 物體參數 -->
+                <div class="mb-3">
+                    <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">物體 1</h2>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="mass1" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">質量 (g)</label>
+                            <input type="number" id="mass1" class="w-full px-3 py-2 text-base border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white" value="10">
+                        </div>
+                        <div>
+                            <label for="volume1" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">體積 (cm³)</label>
+                            <input type="number" id="volume1" class="w-full px-3 py-2 text-base border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white" value="10">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">物體 2</h2>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="mass2" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">質量 (g)</label>
+                            <input type="number" id="mass2" class="w-full px-3 py-2 text-base border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white" value="20">
+                        </div>
+                        <div>
+                            <label for="volume2" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">體積 (cm³)</label>
+                            <input type="number" id="volume2" class="w-full px-3 py-2 text-base border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white" value="10">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 媒介選擇 -->
+                <div>
+                    <label for="medium" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">媒介</label>
+                    <select id="medium" class="w-full px-3 py-2 text-base border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                        <option value="water">水 (1.00 g/cm³)</option>
+                        <option value="saltwater">鹽水 (1.03 g/cm³)</option>
+                        <option value="alcohol">酒精 (0.79 g/cm³)</option>
+                        <option value="oil">橄欖油 (0.92 g/cm³)</option>
+                        <option value="mercury">水銀 (13.6 g/cm³)</option>
+                    </select>
+                </div>
+                
+                <!-- 計算按鈕 -->
+                <button id="calculate" class="w-full py-2 px-4 bg-primary hover:bg-opacity-90 text-white font-medium rounded-md transition-colors">
+                    計算並顯示結果
+                </button>
+                
+                <!-- 結果顯示 -->
+                <div class="p-4 bg-gray-100 dark:bg-gray-700 rounded-md">
+                    <div class="mb-3">
+                        <h3 class="text-md font-semibold text-gray-800 dark:text-white mb-2">物體 1</h3>
+                        <p class="text-gray-700 dark:text-gray-300">
+                            密度: <span id="object1-density" class="font-bold">--</span> g/cm³
+                        </p>
+                        <p class="text-gray-700 dark:text-gray-300">
+                            浮沉關係: <span id="buoyancy1-result" class="font-bold">--</span>
+                        </p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h3 class="text-md font-semibold text-gray-800 dark:text-white mb-2">物體 2</h3>
+                        <p class="text-gray-700 dark:text-gray-300">
+                            密度: <span id="object2-density" class="font-bold">--</span> g/cm³
+                        </p>
+                        <p class="text-gray-700 dark:text-gray-300">
+                            浮沉關係: <span id="buoyancy2-result" class="font-bold">--</span>
+                        </p>
+                    </div>
+                    
+                    <div class="mt-2 pt-2 border-t border-gray-300 dark:border-gray-600">
+                        <p class="text-gray-700 dark:text-gray-300">
+                            媒介密度: <span id="medium-density" class="font-bold">--</span> g/cm³
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- 視覺化顯示 -->
+                <div class="mt-4">
+                    <canvas id="visualization" width="340" height="200" class="w-full rounded-md"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 媒介密度數據 (g/cm³)
+        const mediumDensities = {
+            water: 1.00,
+            saltwater: 1.03,
+            alcohol: 0.79,
+            oil: 0.92,
+            mercury: 13.6
+        };
+        
+        // 媒介顏色
+        const mediumColors = {
+            water: '#ADD8E6',
+            saltwater: '#B0E0E6',
+            alcohol: '#F5F5DC',
+            oil: '#FFDB58',
+            mercury: '#C0C0C0'
+        };
+        
+        // 深色模式媒介顏色
+        const darkMediumColors = {
+            water: '#2A8BC7',
+            saltwater: '#2A96B8',
+            alcohol: '#C8C8A9',
+            oil: '#C7AF3F',
+            mercury: '#8A8A8A'
+        };
+        
+        // 獲取元素
+        const mass1Input = document.getElementById('mass1');
+        const volume1Input = document.getElementById('volume1');
+        const mass2Input = document.getElementById('mass2');
+        const volume2Input = document.getElementById('volume2');
+        const mediumSelect = document.getElementById('medium');
+        const calculateButton = document.getElementById('calculate');
+        const object1DensitySpan = document.getElementById('object1-density');
+        const object2DensitySpan = document.getElementById('object2-density');
+        const buoyancy1ResultSpan = document.getElementById('buoyancy1-result');
+        const buoyancy2ResultSpan = document.getElementById('buoyancy2-result');
+        const mediumDensitySpan = document.getElementById('medium-density');
+        const canvas = document.getElementById('visualization');
+        const ctx = canvas.getContext('2d');
+        
+        // 計算並顯示結果
+        calculateButton.addEventListener('click', function() {
+            const mass1 = parseFloat(mass1Input.value);
+            const volume1 = parseFloat(volume1Input.value);
+            const mass2 = parseFloat(mass2Input.value);
+            const volume2 = parseFloat(volume2Input.value);
+            const mediumKey = mediumSelect.value;
+            
+            // 檢查輸入
+            if (isNaN(mass1) || isNaN(volume1) || volume1 <= 0 ||
+                isNaN(mass2) || isNaN(volume2) || volume2 <= 0) {
+                alert('請輸入有效的質量和體積值');
+                return;
+            }
+            
+            // 計算物體1密度
+            const object1Density = mass1 / volume1;
+            object1DensitySpan.textContent = object1Density.toFixed(2);
+            
+            // 計算物體2密度
+            const object2Density = mass2 / volume2;
+            object2DensitySpan.textContent = object2Density.toFixed(2);
+            
+            // 獲取媒介密度
+            const mediumDensity = mediumDensities[mediumKey];
+            mediumDensitySpan.textContent = mediumDensity.toFixed(2);
+            
+            // 確定物體1浮沉關係
+            let buoyancy1Result;
+            if (object1Density < mediumDensity) {
+                buoyancy1Result = '浮在表面 (密度 < 媒介密度)';
+            } else if (object1Density > mediumDensity) {
+                buoyancy1Result = '沉入底部 (密度 > 媒介密度)';
+            } else {
+                buoyancy1Result = '中間懸浮 (密度 = 媒介密度)';
+            }
+            buoyancy1ResultSpan.textContent = buoyancy1Result;
+            
+            // 確定物體2浮沉關係
+            let buoyancy2Result;
+            if (object2Density < mediumDensity) {
+                buoyancy2Result = '浮在表面 (密度 < 媒介密度)';
+            } else if (object2Density > mediumDensity) {
+                buoyancy2Result = '沉入底部 (密度 > 媒介密度)';
+            } else {
+                buoyancy2Result = '中間懸浮 (密度 = 媒介密度)';
+            }
+            buoyancy2ResultSpan.textContent = buoyancy2Result;
+            
+            // 繪製視覺化圖形
+            drawVisualization(object1Density, object2Density, mediumDensity, mediumKey);
+        });
+        
+        // 繪製視覺化
+        function drawVisualization(object1Density, object2Density, mediumDensity, mediumKey) {
+            // 獲取畫布尺寸
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            // 清除畫布
+            ctx.clearRect(0, 0, width, height);
+            
+            // 繪製背景
+            ctx.fillStyle = document.documentElement.classList.contains('dark') ? '#333' : '#f5f5f5';
+            ctx.fillRect(0, 0, width, height);
+            
+            // 繪製容器
+            ctx.strokeStyle = document.documentElement.classList.contains('dark') ? '#aaa' : '#333';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.rect(40, 20, width - 80, height - 40);
+            ctx.stroke();
+            
+            // 繪製媒介
+            const liquidHeight = height / 2; // 水線放在畫面中間
+            ctx.fillStyle = document.documentElement.classList.contains('dark') 
+                ? darkMediumColors[mediumKey] 
+                : mediumColors[mediumKey];
+            ctx.fillRect(41, liquidHeight, width - 82, height - liquidHeight - 20);
+            
+            // 物體尺寸和間距
+            const objectSize = 35;
+            const spacing = 70; // 物體間的水平間距
+            
+            // 計算物體1的位置
+            let object1Y;
+            if (object1Density < mediumDensity) {
+                // 浮在表面
+                object1Y = liquidHeight - objectSize/2;
+            } else if (object1Density > mediumDensity) {
+                // 沉入底部
+                object1Y = height - 40;
+            } else {
+                // 中間懸浮
+                object1Y = (liquidHeight + height - 40) / 2;
+            }
+            
+            // 計算物體2的位置
+            let object2Y;
+            if (object2Density < mediumDensity) {
+                // 浮在表面
+                object2Y = liquidHeight - objectSize/2;
+            } else if (object2Density > mediumDensity) {
+                // 沉入底部
+                object2Y = height - 40;
+            } else {
+                // 中間懸浮
+                object2Y = (liquidHeight + height - 40) / 2;
+            }
+            
+            // 物體的X座標位置
+            const object1X = width/2 - spacing/2;
+            const object2X = width/2 + spacing/2;
+            
+            // 繪製物體1 (立方體)
+            ctx.fillStyle = document.documentElement.classList.contains('dark') ? '#FF9F5B' : '#FF6347';
+            ctx.fillRect(object1X - objectSize/2, object1Y - objectSize/2, objectSize, objectSize);
+            ctx.strokeStyle = document.documentElement.classList.contains('dark') ? '#FFC29F' : '#B22222';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(object1X - objectSize/2, object1Y - objectSize/2, objectSize, objectSize);
+            
+            // 繪製物體2 (立方體，使用不同顏色)
+            ctx.fillStyle = document.documentElement.classList.contains('dark') ? '#5B9FFF' : '#4682B4';
+            ctx.fillRect(object2X - objectSize/2, object2Y - objectSize/2, objectSize, objectSize);
+            ctx.strokeStyle = document.documentElement.classList.contains('dark') ? '#9FC2FF' : '#1E90FF';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(object2X - objectSize/2, object2Y - objectSize/2, objectSize, objectSize);
+            
+            // 添加媒介標籤
+            ctx.fillStyle = document.documentElement.classList.contains('dark') ? '#fff' : '#000';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(`${getMediumName(mediumKey)} (${mediumDensity} g/cm³)`, width/2, height - 25);
+            
+            // 添加物體1標籤
+            ctx.fillStyle = document.documentElement.classList.contains('dark') ? '#FFC29F' : '#B22222';
+            ctx.fillText(`物體1 (${object1Density.toFixed(2)} g/cm³)`, object1X, object1Y - objectSize/2 - 5);
+            
+            // 添加物體2標籤
+            ctx.fillStyle = document.documentElement.classList.contains('dark') ? '#9FC2FF' : '#1E90FF';
+            ctx.fillText(`物體2 (${object2Density.toFixed(2)} g/cm³)`, object2X, object2Y - objectSize/2 - 5);
+            
+            // 繪製水面線
+            ctx.beginPath();
+            ctx.moveTo(41, liquidHeight);
+            ctx.lineTo(width - 41, liquidHeight);
+            ctx.strokeStyle = document.documentElement.classList.contains('dark') ? '#888' : '#666';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 3]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // 添加水線標籤
+            ctx.fillStyle = document.documentElement.classList.contains('dark') ? '#fff' : '#000';
+            ctx.fillText("水線", 30, liquidHeight + 5);
+        }
+        
+        // 獲取媒介名稱
+        function getMediumName(key) {
+            const names = {
+                water: '水',
+                saltwater: '鹽水',
+                alcohol: '酒精',
+                oil: '橄欖油',
+                mercury: '水銀'
+            };
+            return names[key];
+        }
+        
+        // 初始化
+        calculateButton.click();
+    </script>
+</body>
+</html>
